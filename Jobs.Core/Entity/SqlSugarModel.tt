@@ -1,0 +1,48 @@
+﻿<#@ template debug="false" hostspecific="true" language="C#" #>
+<#@ assembly name="D:\Job\Jobschedule\Jobs.Core\bin\Debug\SqlSugar.dll" #>
+<#@ import namespace="System" #>
+<#@ import namespace="SqlSugar" #>
+<# 
+	//当前项目目录
+	string projectDir = Host.ResolveAssemblyReference("$(ProjectDir)");
+	//解决方案目录
+	string solutionDir = Host.ResolveAssemblyReference("$(SolutionDir)");
+	//数据库链接字符串
+	string connstr=@"Data Source=10.10.79.40;User ID=comicUser;Password=dhF11flajds_~D#dff*!;Initial Catalog=D_Job;Pooling=true;";
+	//输出目录
+	string output=projectDir + @"Entity\";
+	//命名空间
+	string modelnamespace="Jobs.Core.Entity";
+	//指定表名生成,可以传数组，如果不指定，即生成全部表
+	string tbname="Crawer_Comic";	
+	//表名前缀，如果填写，就替换掉
+	string tbPrefixSource="Crawer_";
+	//表名前缀替换为
+	string tbPrefixTarget="";	
+					
+	//连接数据库
+	SqlSugarClient db = new SqlSugarClient(new ConnectionConfig() { 
+									ConnectionString = connstr, //必填
+									DbType = DbType.SqlServer, //必填
+									IsAutoCloseConnection = true, //默认false
+									InitKeyType=InitKeyType.SystemTable });
+		
+	//生成实体支持别名表和别名列
+	//db.DbMaintenance.GetTableInfoList 可以拿到所有的表名可以批量循环操作	
+	if(!string.IsNullOrEmpty(tbPrefixSource)){
+		foreach(var item in db.DbMaintenance.GetTableInfoList()){
+			//添加别名表
+		db.MappingTables.Add(item.Name.Replace(tbPrefixSource,tbPrefixTarget), item.Name);
+		}
+	}				
+	if(!string.IsNullOrEmpty(tbname)){
+		//指定表名生成
+		db.DbFirst.IsCreateAttribute().Where(tbname).CreateClassFile(output,modelnamespace);
+	}
+	else{
+		//生成所有表
+		db.DbFirst.IsCreateAttribute().CreateClassFile(output,modelnamespace);
+	}
+
+#>
+生成到：<#=output #>
